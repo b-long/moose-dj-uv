@@ -39,6 +39,9 @@ task_manager = TaskManager()
 
 
 def run_task(task_id, start_index, end_index):
+    """
+    FIXME: The progress reported is incorrect.
+    """
     # Simulate a long-running task
     progress = 0
     with lock:
