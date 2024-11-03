@@ -5,10 +5,10 @@ from django.http import JsonResponse
 from django.core.cache import cache
 
 
-# This can be taken all the way down to 1, and our tests for
+# NOTE: This can be taken all the way down to 1, and our tests for
 # an immediate response will still pass
-NUM_FAKE_TASKS = 2
-
+NUM_FAKE_TASKS = 15
+# NOTE: Tests pass with 'DEAMON_MODE' set to True or False.
 DEAMON_MODE = True
 
 lock = threading.Lock()  # Lock for thread safety with cache access
@@ -38,12 +38,12 @@ class TaskManager:
 task_manager = TaskManager()
 
 
-def run_task(task_id):
+def run_task(task_id, start_index, end_index):
     # Simulate a long-running task
     progress = 0
     with lock:
         cache.set(task_id, {'progress': progress}, timeout=3600)
-    for i in range(NUM_FAKE_TASKS):
+    for i in range(start_index, end_index + 1):
         # Do some work
         progress = (i * (100 / NUM_FAKE_TASKS))
         with lock:
@@ -63,10 +63,19 @@ def start_task(request):
         cache.set(task_id, {'progress': 0}, timeout=3600)
 
     # Start the task in a separate thread
-    future = threading.Thread(target=run_task, args=(task_id,), daemon=DEAMON_MODE)
-    future.start()
+    # future = threading.Thread(target=run_task, args=(task_id,), daemon=DEAMON_MODE)
+    # future.start()
+    # task_manager.add_task(task_id, future)
 
-    task_manager.add_task(task_id, future)
+    half_tasks = NUM_FAKE_TASKS // 2
+    thread1 = threading.Thread(target=run_task, args=(task_id, 0, half_tasks - 1), daemon=DEAMON_MODE)
+    thread2 = threading.Thread(target=run_task, args=(task_id, half_tasks, NUM_FAKE_TASKS - 1), daemon=DEAMON_MODE)
+    thread1.start()
+    task_manager.add_task(task_id, thread1)
+
+    thread2.start()
+    task_manager.add_task(task_id, thread2)
+
 
     return JsonResponse({'task_id': task_id})
 
