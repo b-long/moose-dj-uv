@@ -39,6 +39,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 ]
 
+# Third-party apps
+INSTALLED_APPS += []
+
+# Our apps
+INSTALLED_APPS += [
+    "moose_dj.news"
+]
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
