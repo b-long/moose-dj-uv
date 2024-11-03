@@ -47,7 +47,10 @@ uv run django-admin startapp news
 ```
 uv run manage.py check
 uv run manage.py makemigrations
+# Run tests, capturing output
 uv run pytest
+# Run tests , without capturing output
+uv run pytest --capture=no
 ```
 
 #### Dependency installations: Prod
