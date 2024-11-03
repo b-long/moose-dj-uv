@@ -17,6 +17,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+from moose_dj.news.views import start_task, get_task_status
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    path('start_task', start_task, name="start_task"),
+    path('get_task_status/<str:task_id>', get_task_status, name="get_task_status")
 ]
