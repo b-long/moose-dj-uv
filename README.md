@@ -9,3 +9,9 @@ is being used to learn `uv`.
 
 For additional information, see: 
 * https://docs.astral.sh/uv/guides/projects/
+
+### Django with `uv`
+
+```
+uv run django-admin startproject moose_dj .
+```
