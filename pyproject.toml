@@ -13,3 +13,9 @@ dev = [
     "pytest>=8.3.3",
     "pytest-django>=4.9.0",
 ]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "moose_dj.settings"
+# addopts = "--cov --nomigrations --reuse-db"
+norecursedirs = ".git* frontend requirements templates"
+python_files = "test_*.py"
