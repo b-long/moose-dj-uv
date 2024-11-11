@@ -18,6 +18,11 @@ jobs:
         with:
           enable-cache: true
       
+      - name: Do something if the cache was restored
+        if: steps.setup-uv.outputs.cache-hit != 'true'
+        run: |
+          uv sync --frozen
+        
       - name: Install dependencies
         run: |
           uv run manage.py check
