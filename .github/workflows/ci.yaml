@@ -23,7 +23,7 @@ jobs:
         run: |
           uv sync --frozen
         
-      - name: Install dependencies
+      - name: Run tests
         run: |
           uv run manage.py check
           uv run manage.py makemigrations
