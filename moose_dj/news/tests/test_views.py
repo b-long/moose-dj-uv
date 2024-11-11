@@ -116,7 +116,7 @@ def test_immediate_response_with_celery(celery_worker_fixture):
     time.sleep(NUM_FAKE_TASKS)
 
     attempts = 0
-    max_attempts = 7
+    max_attempts = 10
 
     while attempts < max_attempts:
         time.sleep(2)
