@@ -90,7 +90,7 @@ def get_task_status(request, task_id):
 
     if task_data:
         if 'result' in task_data:
-            return JsonResponse({'status': 'completed', 'result': task_data['result']})
+            return JsonResponse({'status': 'completed', 'result': task_data['result'], 'progress': 100 })
         else:
             return JsonResponse({'status': 'running', 'progress': task_data['progress']})
     else:
