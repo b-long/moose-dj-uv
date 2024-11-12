@@ -5,7 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
 dependencies = [
+    "celery>=5.4.0",
     "django>=4.2,<5",
+    "docker>=7.1.0",
+    "fakeredis>=2.26.1",
 ]
 
 [dependency-groups]
@@ -17,5 +20,6 @@ dev = [
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "moose_dj.settings"
 # addopts = "--cov --nomigrations --reuse-db"
+addopts = "--capture=no"
 norecursedirs = ".git* frontend requirements templates"
 python_files = "test_*.py"
