@@ -1,11 +1,15 @@
 import subprocess
 import sys
 import contextlib
-import fakeredis
+from pathlib import Path
 from threading import Thread
-from fakeredis import TcpFakeServer
+from fakeredis import FakeStrictRedis, TcpFakeServer
+from time import sleep
+import docker
+from contextlib import contextmanager
 
 import pytest
+
 
 @pytest.fixture(scope="function")
 def huey_worker_fixture():
@@ -22,7 +26,7 @@ def huey_worker_fixture():
                 sys.executable,
                 "manage.py",
                 # "run_huey", # Run standard huey ( https://github.com/coleifer/huey )
-                "djangohuey", # Run https://github.com/gaiacoop/django-huey
+                "djangohuey",  # Run https://github.com/gaiacoop/django-huey
                 # "arg1", "arg2"
             ]
         )
@@ -39,29 +43,33 @@ def huey_worker_fixture():
 
 @pytest.fixture()
 def fake_redis_fixture():
-
     @contextlib.contextmanager
     def _run_command():
         server_address = ("127.0.0.1", 6379)
-        server = TcpFakeServer(server_address, server_type="redis")
-        thread = Thread(target=server.serve_forever, daemon=True)
-        thread.start()
 
+        server = TcpFakeServer(server_address, server_type="valkey")
+        # thread = Thread(target=server.serve_forever, daemon=True)
+        # thread.start()
+
+        fsr_server = FakeStrictRedis(server=server, singleton=True)
 
         try:
-            yield thread
+            yield fsr_server
+        except:
+            # thread.join()
+            server.shutdown()
         finally:
             # Gracefully terminate the thread
-            # thread.stop()
-            thread.join()
-
+            # thread.kill()
+            # thread.join()
+            server.shutdown()
 
     with _run_command() as process:
         yield process
 
 
 @pytest.fixture(scope="function")
-def celery_worker_fixture(fake_redis_fixture):
+def celery_worker_fixture(redis_container):
     """
     Starts a long-running Django management command as a background process.
 
@@ -71,14 +79,7 @@ def celery_worker_fixture(fake_redis_fixture):
     @contextlib.contextmanager
     def _run_command():
         process = subprocess.Popen(
-            [
-                sys.executable,
-                "-m",
-                "celery",
-                "-A",
-                "moose_dj",
-                "worker"
-            ]
+            [sys.executable, "-m", "celery", "-A", "moose_dj", "worker"]
         )
         try:
             yield process
@@ -89,3 +90,46 @@ def celery_worker_fixture(fake_redis_fixture):
 
     with _run_command() as process:
         yield process
+
+
+@pytest.fixture(scope="function")
+def redis_container():
+    """
+    Context manager to launch a Redis container named 'my-redis' on localhost:6379.
+    Deletes the container if it already exists or when the context exits.
+    """
+    try:
+        client = docker.from_env()
+    except Exception:
+        socket_path = Path.home() / ".colima" / "default" / "docker.sock"
+        docker_socket_path = f"unix://{socket_path}"
+        client = docker.DockerClient(docker_socket_path)
+
+    try:
+        # Check if the container already exists
+        # if container:
+        # if "my-redis" in client.containers.list():
+        #     container = client.containers.get("my-redis")
+        #     container.remove(force=True)
+        container = client.containers.get("my-redis")
+        if container:
+            container.remove(force=True)
+
+        # Create and start the container
+        container = client.containers.run(
+            # "redis"
+            "redis:6",
+            detach=True,
+            name="my-redis",
+            ports={"6379/tcp": 6379},
+        )
+
+        sleep(3)
+        yield container
+
+    finally:
+        # Remove the container on exit
+        try:
+            container.remove(force=True)
+        except docker.errors.NotFound:
+            pass
