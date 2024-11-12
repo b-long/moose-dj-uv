@@ -7,6 +7,7 @@ from fakeredis import FakeStrictRedis, TcpFakeServer
 from time import sleep
 import docker
 from contextlib import contextmanager
+from docker.errors import DockerException
 
 import pytest
 
@@ -98,22 +99,27 @@ def redis_container():
     Context manager to launch a Redis container named 'my-redis' on localhost:6379.
     Deletes the container if it already exists or when the context exits.
     """
+    client = None
+    container = None
     try:
         client = docker.from_env()
-    except Exception:
-        socket_path = Path.home() / ".colima" / "default" / "docker.sock"
-        docker_socket_path = f"unix://{socket_path}"
-        client = docker.DockerClient(docker_socket_path)
+    except DockerException as e:
+        print("DockerException:", e)
+        home = Path.home()
+        socket = f"unix:///{home}/.colima/default/docker.sock"
+        client = docker.DockerClient(base_url=socket)
+
+    if client is None:
+        raise Exception("Could not create Docker client")
 
     try:
         # Check if the container already exists
-        # if container:
-        # if "my-redis" in client.containers.list():
-        #     container = client.containers.get("my-redis")
-        #     container.remove(force=True)
-        container = client.containers.get("my-redis")
-        if container:
-            container.remove(force=True)
+        try:
+            existing_container = client.containers.get("my-redis")
+            existing_container.stop()
+            existing_container.remove()
+        except docker.errors.NotFound:
+            pass
 
         # Create and start the container
         container = client.containers.run(
@@ -124,7 +130,11 @@ def redis_container():
             ports={"6379/tcp": 6379},
         )
 
-        sleep(3)
+        logs = container.logs(stream=True)
+        for log in logs:
+            if b"Ready to accept connections" in log:
+                break
+
         yield container
 
     finally:

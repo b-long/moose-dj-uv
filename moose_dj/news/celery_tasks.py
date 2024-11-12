@@ -9,7 +9,7 @@ from celery.result import GroupResult
 def send_feedback_email_task(data: list):
     """Fake a long-running task."""
    
-    job = group([process_item.subtask(item) for item in data])
+    job = group([process_item.s(item) for item in data])
     group_result = job.apply_async()
     return group_result.id
 

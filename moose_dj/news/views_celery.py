@@ -56,6 +56,7 @@ def get_task_status(request, task_id):
 
             print("Results")
             print(result.results)
+            print(f"{progress=}")
 
             return JsonResponse({
                 'task_id': task_id,
