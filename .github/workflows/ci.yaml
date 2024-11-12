@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v1
+        with:
+          enable-cache: true
+      
+      - name: Do something if the cache was restored
+        if: steps.setup-uv.outputs.cache-hit != 'true'
+        run: |
+          uv sync --frozen
+        
+      - name: Run tests
+        run: |
+          uv run manage.py check
+          uv run manage.py makemigrations
+          uv run pytest --capture=no
