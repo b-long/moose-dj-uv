@@ -14,15 +14,26 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
 from django.urls import path
 
 # from moose_dj.news.views import start_task, get_task_status
 from moose_dj.news.views_celery import start_task, get_task_status
+from moose_dj.news.views_dask import (
+    start_task as start_task_dask,
+    get_task_status as get_task_status_dask,
+)
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path("admin/", admin.site.urls),
+    path("start_task", start_task, name="start_task"),
+    path("get_task_status/<str:task_id>", get_task_status, name="get_task_status"),
 
-    path('start_task', start_task, name="start_task"),
-    path('get_task_status/<str:task_id>', get_task_status, name="get_task_status")
+    path("start_task_dask", start_task_dask, name="start_task_dask"),
+    path(
+        "get_task_status_dask/<str:task_id>",
+        get_task_status_dask,
+        name="get_task_status_dask",
+    ),
 ]
