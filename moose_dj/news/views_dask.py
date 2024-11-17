@@ -48,7 +48,10 @@ async def get_task_status(request, task_id):
             return JsonResponse({"status": "running", "progress": progress})
         else:
             results = client.gather(futures, asynchronous=False)
-            progress = 100
+
+            # Calculate progress, based on futures that are 'done'
+            progress = int((sum(future.done() for future in futures) / len(futures)) * 100)
+
             return JsonResponse(
                 {
                     "task_id": task_id,
