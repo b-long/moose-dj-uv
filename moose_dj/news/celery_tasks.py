@@ -6,7 +6,7 @@ from celery import shared_task, group
 from celery.result import GroupResult
 
 @shared_task()
-def send_feedback_email_task(data: list):
+def long_running_process(data: list):
     """Fake a long-running task."""
    
     job = group([process_item.s(item) for item in data])
@@ -16,8 +16,8 @@ def send_feedback_email_task(data: list):
 @shared_task()
 def process_item(item):
     # Perform the actual work here
-    sleep_time = 13
-    sleep(sleep_time) # Simulate expensive operation(s) that freeze Django
+    sleep_time = 2
+    sleep(sleep_time) # Simulate a long-running operation by sleeping for 13 seconds
     now_time = datetime.datetime.now().isoformat(sep=" ", timespec="seconds")
 
     return {

@@ -1,14 +1,13 @@
 from uuid import uuid4
 from django.http import JsonResponse
-from moose_dj.news.celery_tasks import send_feedback_email_task
-from celery.result import AsyncResult, GroupResult
+from moose_dj.news.celery_tasks import long_running_process
+from celery.result import AsyncResult
 
 # NOTE: This can be taken all the way down to 1, and our tests for
 # an immediate response will still pass
 NUM_FAKE_TASKS = 25
 # NOTE: Tests pass with 'DEAMON_MODE' set to True or False.
 DEAMON_MODE = True
-
 
 
 def start_task(request):
@@ -23,17 +22,15 @@ def start_task(request):
     work_list: list = []
 
     for t in range(NUM_FAKE_TASKS):
-
         task_id = str(uuid4())  # Generate a unique ID for the task
 
-        work_list.append({
-            "address": f"foo--{t}@example.com", 
-            "message": f"Mail task: {task_id}"
-        })
+        work_list.append(
+            {"address": f"foo--{t}@example.com", "message": f"Mail task: {task_id}"}
+        )
 
-    response = send_feedback_email_task.delay(work_list)
+    response = long_running_process.delay(work_list)
     celery_task_id = response.task_id
-    return JsonResponse({'task_id': celery_task_id})
+    return JsonResponse({"task_id": celery_task_id})
 
 
 def get_task_status(request, task_id):
@@ -42,9 +39,8 @@ def get_task_status(request, task_id):
 
     if group_result:
         if group_result.status == "PENDING":
-            
             progress = 0
-            return JsonResponse({'status': 'running', 'progress': progress})
+            return JsonResponse({"status": "running", "progress": progress})
         else:
             result = group_result.children[0]
             # Calculate progress based on completed subtasks
@@ -58,61 +54,12 @@ def get_task_status(request, task_id):
             print(result.results)
             print(f"{progress=}")
 
-            return JsonResponse({
-                'task_id': task_id,
-                'status': "completed" if int(progress) == 100 else "running",
-                'progress': progress
-            })
+            return JsonResponse(
+                {
+                    "task_id": task_id,
+                    "status": "completed" if int(progress) == 100 else "running",
+                    "progress": progress,
+                }
+            )
     else:
-        return JsonResponse({'status': 'error', 'message': 'Task not found'})
-
-
-    # if result:
-    #     if result.ready() and result.status != "PENDING":
-    #         final_result = result.get()
-    #         result_status = result.status
-    #         result_result = result.result
-    #         return JsonResponse({'status': 'completed', 'result': final_result, 'progress': 100 })
-    #     else:
-    #         # result_status = result.status
-    #         # result_state = result.state
-    #         # FIXME
-    #         if result.info:
-    #             progress = result.info.get('done', 0)
-    #         else:
-    #             progress = 0
-            
-    #         return JsonResponse({'status': 'running', 'progress': progress})
-    # else:
-    #     return JsonResponse({'status': 'error', 'message': 'Task not found'})
-
-
-
-# def get_task_status(request, task_id):
-#     group_result = GroupResult(task_id)
-#     # group_result = AsyncResult(task_id)
-
-#     if group_result:
-#         if group_result.results == None:
-#             progress = 0
-#             return JsonResponse({'status': 'running', 'progress': progress})
-#         else:
-#             result = group_result.children[0]
-#             # Calculate progress based on completed subtasks
-#             # measured_work = result.children[0].children
-
-#             total_subtasks = len(result.children)
-#             completed_subtasks = sum(1 for child in result.children if child.ready())
-#             progress = (completed_subtasks / total_subtasks) * 100
-
-#             print("Results")
-#             print(result.results)
-
-#             return JsonResponse({
-#                 'task_id': task_id,
-#                 'status': "completed" if int(progress) == 100 else "running",
-#                 'progress': progress
-#             })
-#     else:
-#         return JsonResponse({'status': 'error', 'message': 'Task not found'})
-
+        return JsonResponse({"status": "error", "message": "Task not found"})
