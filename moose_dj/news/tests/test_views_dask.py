@@ -2,7 +2,6 @@ from django.test import Client
 from django.urls import reverse
 import time
 
-NUM_FAKE_TASKS = 25
 
 def test_immediate_response_with_dask():
     client = Client()
@@ -16,15 +15,15 @@ def test_immediate_response_with_dask():
     r2_status = response2.json()["status"]
     assert r2_status == "running"
 
-    time.sleep(NUM_FAKE_TASKS)
-
     attempts = 0
     max_attempts = 8
 
     while attempts < max_attempts:
-        time.sleep(4)
+        time.sleep(1)
         try:
-            response3 = client.get(reverse("get_task_status_dask", kwargs={"task_id": task_id}))
+            response3 = client.get(
+                reverse("get_task_status_dask", kwargs={"task_id": task_id})
+            )
             assert response3.status_code == 200
 
             r3_status = response3.json()["status"]
